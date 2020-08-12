@@ -2,6 +2,8 @@ package services
 
 import (
 	"github.com/anfelo/bookstore_users-api/domain/users"
+	"github.com/anfelo/bookstore_users-api/utils/crypto_utils"
+	"github.com/anfelo/bookstore_users-api/utils/dates"
 	"github.com/anfelo/bookstore_users-api/utils/errors"
 )
 
@@ -19,6 +21,10 @@ func CreateUser(user users.User) (*users.User, *errors.RestErr) {
 	if err := user.Validate(); err != nil {
 		return nil, err
 	}
+
+	user.Status = users.StatusActive
+	user.Password = crypto_utils.GetMd5(user.Password)
+	user.CreatedAt = dates.GetNowStringDB()
 	if err := user.Save(); err != nil {
 		return nil, err
 	}
@@ -60,4 +66,10 @@ func UpdateUser(isPartial bool, user users.User) (*users.User, *errors.RestErr) 
 func DeleteUser(userID int64) *errors.RestErr {
 	user := &users.User{ID: userID}
 	return user.Delete()
+}
+
+// Search method incharge of finding users that match a status
+func Search(status string) (users.Users, *errors.RestErr) {
+	dao := &users.User{}
+	return dao.FindByStatus(status)
 }
