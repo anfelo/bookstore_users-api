@@ -11,14 +11,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GetUser gets a user by user_id
-func GetUser(c *gin.Context) {
-	userId, err := strconv.ParseInt(c.Param("user_id"), 10, 64)
+func getUserID(userIDParam string) (int64, *errors.RestErr) {
+	userID, err := strconv.ParseInt(userIDParam, 10, 64)
 	if err != nil {
-		restErr := errors.NewBadRequestError("user id should be a number")
-		c.JSON(restErr.Status, restErr)
+		return 0, errors.NewBadRequestError("user id should be a number")
 	}
-	user, getErr := services.GetUser(userId)
+	return userID, nil
+}
+
+// Get gets a user by user_id
+func Get(c *gin.Context) {
+	userID, err := getUserID(c.Param("user_id"))
+	if err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
+	user, getErr := services.GetUser(userID)
 	if getErr != nil {
 		c.JSON(getErr.Status, getErr)
 		return
@@ -26,8 +34,8 @@ func GetUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, user)
 }
 
-// CreateUser creates a new user
-func CreateUser(c *gin.Context) {
+// Create creates a new user
+func Create(c *gin.Context) {
 	var user users.User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		restErr := errors.NewBadRequestError("invalid json body")
@@ -40,4 +48,42 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusCreated, result)
+}
+
+// Update updates a user
+func Update(c *gin.Context) {
+	userID, err := getUserID(c.Param("user_id"))
+	if err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
+	var user users.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		restErr := errors.NewBadRequestError("invalid json body")
+		c.JSON(restErr.Status, restErr)
+		return
+	}
+	isPartial := c.Request.Method == http.MethodPatch
+	user.ID = userID
+	result, saveErr := services.UpdateUser(isPartial, user)
+	if saveErr != nil {
+		c.JSON(saveErr.Status, saveErr)
+		return
+	}
+	c.JSON(http.StatusOK, result)
+}
+
+// Delete deletes a user
+func Delete(c *gin.Context) {
+	userID, err := getUserID(c.Param("user_id"))
+	if err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
+
+	if delErr := services.DeleteUser(userID); delErr != nil {
+		c.JSON(delErr.Status, delErr)
+		return
+	}
+	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
 }
