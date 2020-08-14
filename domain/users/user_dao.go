@@ -2,6 +2,9 @@ package users
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/anfelo/bookstore_users-api/utils/mysql_utils"
 
 	"github.com/anfelo/bookstore_users-api/datasources/mysql/users_db"
 	"github.com/anfelo/bookstore_users-api/logger"
@@ -9,11 +12,12 @@ import (
 )
 
 const (
-	queryInsertUser        = "INSERT INTO users(first_name, last_name, email, password, status, created_at) VALUES(?, ?, ?, ?, ?, ?);"
-	queryGetUser           = "SELECT id, first_name, last_name, email, status, created_at FROM users WHERE id=?;"
-	queryUpdateUser        = "UPDATE users SET first_name=?, last_name=?, email=? WHERE id=?;"
-	queryDeleteUser        = "DELETE FROM users WHERE id=?;"
-	queryFindUsersByStatus = "SELECT id, first_name, last_name, email, status, created_at FROM users WHERE status=?;"
+	queryInsertUser             = "INSERT INTO users(first_name, last_name, email, password, status, created_at) VALUES(?, ?, ?, ?, ?, ?);"
+	queryGetUser                = "SELECT id, first_name, last_name, email, status, created_at FROM users WHERE id=?;"
+	queryUpdateUser             = "UPDATE users SET first_name=?, last_name=?, email=? WHERE id=?;"
+	queryDeleteUser             = "DELETE FROM users WHERE id=?;"
+	queryFindByStatus           = "SELECT id, first_name, last_name, email, status, created_at FROM users WHERE status=?;"
+	queryFindByEmailAndPassword = "SELECT id, first_name, last_name, email, status, created_at FROM users WHERE email=? AND password=? AND status=?;"
 )
 
 // Get method retrieves a user from the DB by its id
@@ -102,7 +106,7 @@ func (user *User) Delete() *errors.RestErr {
 
 // FindByStatus method finds users that match status
 func (user *User) FindByStatus(status string) ([]User, *errors.RestErr) {
-	stmt, err := users_db.Client.Prepare(queryFindUsersByStatus)
+	stmt, err := users_db.Client.Prepare(queryFindByStatus)
 	if err != nil {
 		logger.Error("error when trying to prepare find user stmt", err)
 		return nil, errors.NewInternatServerError("database error")
@@ -133,4 +137,27 @@ func (user *User) FindByStatus(status string) ([]User, *errors.RestErr) {
 	}
 
 	return results, nil
+}
+
+// FindByEmailAndPassword method retrieves a user from the DB by its id
+func (user *User) FindByEmailAndPassword() *errors.RestErr {
+	stmt, err := users_db.Client.Prepare(queryFindByEmailAndPassword)
+	if err != nil {
+		logger.Error("error when trying to prepare get user by email and password stmt", err)
+		return errors.NewInternatServerError("database error")
+	}
+	defer stmt.Close()
+
+	result := stmt.QueryRow(user.Email, user.Password, StatusActive)
+	if err := result.Scan(
+		&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Status, &user.CreatedAt,
+	); err != nil {
+		if strings.Contains(err.Error(), mysql_utils.ErrorNoRows) {
+			return errors.NewNotFoundError("invalid user credentials")
+		}
+		logger.Error("error when trying to scan result in find by email and password", err)
+		return errors.NewInternatServerError("database error")
+	}
+
+	return nil
 }
