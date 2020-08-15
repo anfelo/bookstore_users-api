@@ -4,7 +4,7 @@ import (
 	"github.com/anfelo/bookstore_users-api/domain/users"
 	"github.com/anfelo/bookstore_users-api/utils/crypto_utils"
 	"github.com/anfelo/bookstore_users-api/utils/dates"
-	"github.com/anfelo/bookstore_users-api/utils/errors"
+	"github.com/anfelo/bookstore_utils/errors"
 )
 
 var (

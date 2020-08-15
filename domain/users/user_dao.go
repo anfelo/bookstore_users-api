@@ -8,7 +8,7 @@ import (
 
 	"github.com/anfelo/bookstore_users-api/datasources/mysql/users_db"
 	"github.com/anfelo/bookstore_users-api/logger"
-	"github.com/anfelo/bookstore_users-api/utils/errors"
+	"github.com/anfelo/bookstore_utils/errors"
 )
 
 const (

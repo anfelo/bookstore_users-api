@@ -3,7 +3,7 @@ package users
 import (
 	"strings"
 
-	"github.com/anfelo/bookstore_users-api/utils/errors"
+	"github.com/anfelo/bookstore_utils/errors"
 )
 
 const (

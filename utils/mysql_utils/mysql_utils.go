@@ -3,7 +3,7 @@ package mysql_utils
 import (
 	"strings"
 
-	"github.com/anfelo/bookstore_users-api/utils/errors"
+	"github.com/anfelo/bookstore_utils/errors"
 	"github.com/go-sql-driver/mysql"
 )
 

@@ -4,8 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/anfelo/bookstore_oauth-lib/oauth"
 	"github.com/anfelo/bookstore_users-api/services"
-	"github.com/anfelo/bookstore_users-api/utils/errors"
+	"github.com/anfelo/bookstore_utils/errors"
 
 	"github.com/anfelo/bookstore_users-api/domain/users"
 	"github.com/gin-gonic/gin"
@@ -21,6 +22,10 @@ func getUserID(userIDParam string) (int64, *errors.RestErr) {
 
 // Get gets a user by user_id
 func Get(c *gin.Context) {
+	if err := oauth.AuthenticateRequest(c.Request); err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
 	userID, err := getUserID(c.Param("user_id"))
 	if err != nil {
 		c.JSON(err.Status, err)
@@ -31,7 +36,13 @@ func Get(c *gin.Context) {
 		c.JSON(getErr.Status, getErr)
 		return
 	}
-	c.JSON(http.StatusCreated, user.Marshal(c.GetHeader("X-Public") == "true"))
+
+	if oauth.GetCallerID(c.Request) == user.ID {
+		c.JSON(http.StatusOK, user.Marshal(false))
+		return
+	}
+
+	c.JSON(http.StatusOK, user.Marshal(oauth.IsPublic(c.Request)))
 }
 
 // Create creates a new user
